@@ -1,0 +1,3 @@
+python version == 3.10
+
+Every other import uses the latest version compatiable with python 3.10

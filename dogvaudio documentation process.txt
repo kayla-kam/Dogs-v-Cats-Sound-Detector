@@ -1,0 +1,66 @@
+Resources used: 
+Dataset used --> https://www.kaggle.com/datasets/mmoreaux/audio-cats-and-dogs
+
+DogvCat Audio Detector documentation process and steps:
+
+1. Importing the needed statements for the project. 
+2. Turning the .wav files into spectrogram image. They are saved within the designated folder and grabbed from the original folder their dataset was held in (cats_dogs). For the training data of cats and dogs, they are saved within the training folders within our img_dataset. For the test data, they are saved in the combined folder in img_dataset. 
+3. Afterwards, we display every audio file from the original dataset folder. First from the dogs audio folder, then the cats audio folder. 
+4. We then select a example image from the testing folder in img_dataset to show off the spectrograms side by side, one being a cat (left) and one being the dog (right).
+5. Initializing a path into the combined folder for the test data set. Afterwards we make a list out of all the spectrogram image files within the directory, and shuffle them. We print it out to see the results. 
+6. The ImageDataGenerator class is used for the train and test datagen. What each line does is preprocess images from the chosen dataset, whether test or training. This is very common for preprocessing before you put them in the model, as this ensures the values are within a similar scale which promotes training stability and consistent input data for the model. 
+	a. This process is known as normalization, where the purpose is to scale the pixel values to range between 0 and 1. 
+	b. The reason we choose 255 is because normally pixel values in images are between 0 and 255 for 8 bit images. By dividing it by this number, we are ensuring that the pixel values are consistent and in a small range, making training for neural network models more stable and faster to reach convergence. 
+		i. Convergence is the state where a model has been trained so much additional training does not improve it's accuracy or the model itself. In other words, when the training error (or loss) stops decreasing or has reached a minimum level of acceptable error.
+	c. It also helps with the process of gradient descent being used in optimization. We worry that the input data may be too much or overwhelming for the gradient as it optimizes in updates.
+	d. It also helps prevent overwhelmingness in activation functions for inputs, as smaller inputs makes it easier to work with. 
+7. Next is to configure the data_gen files from before and turn them into train_generator and test_generator for feeding the models. For each generator variable:
+	a. flow_from_directory is a function used to generate batches of training data from a specified directory. There are some configurations inside you need to specify.  
+	b. train_data in the first parameter is the directory path where the training images are stored.
+	c. Target_size=(250, 250) sets the target size for which the images from the training directory will be resized to during the batch generation.
+	d. batch_size=30 specifies the batch size i.e. the number of images that's processed at each training step/epoch/iteration. 
+	e. color_mode='rgb' specifies the image color format. 
+	f. shuffle=True means the order of training data is shuffled at the beginning of each epoch. 
+	g. class_mode='binary' specifices the type of problem you're solving when working with images. i.e. binary, which indicates there is a binary classification problem (i.e. there are two classes, dog or cat). This determines how the labels for the data are loaded. 
+		i. Other modes include: categorical (multiclass classification problems where there are more than two classes exist and are hot encoded, like [1,0,0], [0,1,0], and [0,0,1] for three classes), None (no images have generated labels, used for unsupervisied task or if you have the labels separately.), sparse (multi-class classification where class labels are integers or strings i.e. labels/classes are 1, 0, and 2 or 'cat', 'dog', 'bird'.), and raw (similar to categorial but is not hot-encoded. Labels are integers but it doesn't require the labels to be one hot encoded.)
+		ii. Class labels by the way are used to define and correspond to the target/output nodes/layer. The output layer of the model represents the model's confidence of its prediction within a particular class. 
+8. Here we are creating a convolutional neural network model using Keras. 
+	a. The Sequential Model is a linear stack of layers, where you can add layers one by one in a sequential fashion. For every layer that produces a output, it becomes another next layer's input. 
+	b. Conv2D layers are convolutional layers that applies a 2D convolutional operation to the input. 
+	c. MaxPooling2D layers are ones that perform max-pooling, which reduces the spatial dimensions of thje data. (3,3) specifies the size of the pooling window.
+	d. Flatten is a layer that converts the 2D feature maps from the previous layers into a 1D vector. This is neccessary for feeding connected layers. 
+	e. Dense layers are fully connected dense layers. 
+	f. Dropout layers are used for a regularization technique that prevents overfitting. 
+	g. The relu activation function is a function that introduces non-linearity into the model by outputting the input value if it's positive or zero if it's negative. f(x)=max(0,x)
+	h. The sigmoid activation function f(x)= 1/(1+e^-x) maps the input to a value between 0 and 1, making it popular for models that produce probability scores or make binary decisions. Usually good for the output layer of binary classification models. 
+	i. The tanh(x) activation function f(x) = tanh(x) = (e^x - e^-x)/(e^x + e^-x) that is similar to the sigmoid function due to the smooth, s shaped curve but instead of a range of output being 0-1, it is -1 to 1. This allows for more flexibility in neurons as it responds to both positive and negative inputs and gives a output close to 0. 
+9. The model is successfully compiled, the compile() function specifies how it should be trained. 
+	a. optimizer is a algorithm used to update the model's weights during training. Adamax opritmizer is a optimization algorithm used for this parameter.
+		i. Adamax is a first-order gradient based optimization method known for its capability of adjusting the learning rate of each parameter based on data characteristics and historical gradients of each parameter. 
+	b. loss function defines the objective that the model is trying to minimize during training. Binary_crossentropy is used as the loss function, as it is a common choice for binary classification tasks and is used to measure dissimilarity between the true labels and the predicted probabilities. 
+		ii. Binary Cross Entropy is a common loss function whose goal is to optimize the model's parameters by minimizing the loss/maximizing the likelihood of the true labels given the model's predictions. 
+	c. metrics is the parameter that specifies the evaluation metrics that will be monitored during training. Accuracy is picked to help measure the classification accuracy of the model. 
+10. We then define a custome callback class used during training to monitor and control the training process.
+	a. We define a new class called Callback that inherits from the tf.keras.callbacks library. It is used to define custome behaviros at different points during training of a NN, usually for the end of each epochs. 
+	b. We implement a function called def on_epoch_end provided by the Keras callback interface and is called by the end of each epoch. epoch is a parameter that indicates the current epoch number and logs is a parameter that is a dictionary containing training-related metrics and values. 
+	c. In the function, we have the line: if logs.get('accuracy') > 0.8999, this checks the accuracy metric in the logs dictionary to make sure that if a epoch at the end has greater than 0.8999 for accuracy, then self.model.stop_training=True, meaning this stops the training process. 
+11. The model is then trained using model.fit() from the Keras library.
+	a. train_generator is used to generate batches of training data, usually containing tuples of input data and corresponding target labels. 
+	b. epochs=20 is a parameter that specifies the number of training epochs. A epoch is one complete pass through the entire training dataset. 
+	c. validation_data=test_generator is a parameter that specifies the validation data generator, which is used to evaluate the model's performance during training but not used for updating model weights. 
+	d. batch_size=64 is used to determine how many training examples are processed in each training step i.e. 64 training examples are processed at a time. 
+	e. steps_per_epoch=210//64 specifies how many batches of data to process per epoch. The value indicates that there are 210 training examples in the data set with a batch size of 64 aka you'll process 210//64 batches per epoch. 
+	f. validation_steps=67//64 specifies how many batches of validation data to process during validation per epoch. The value indicates there are 67 validation examples in the dataset, with a batch size of 64, so you'll process 67//64 batches for validation per epoch. 
+	g. callbacks=[Callbacks()] is a parameter that specifies a list of callback functions to be called during training. In this case, our previous custom made Callback function is used. 
+12. next, the makeprediction(imagepath) function i used to make predictions on the train model.
+	a. img = image.load_img loads an image from a specificed path given into the parameter of the function. The image is resized to a target size of 250x250 pixels with 3 color channels (RGB)
+	b. x = image.img_to_array() converts the loaded image from before to a numPy array named x. This step is necessary since neural network models can process the image as an array. 
+	c. x = np.expand_dims() means the array x is expanded by adding an extra dimension at axis 0. This extra dimension represents a batch of one image, which is required when making predictions. 
+	d. images = np.vstack([x]) means the expanded image array is stacked vertically using the numpy method, and the numpy array 'images' represents this batch of images. 
+	e. classes = model.predict is a line used to predict the class probabilities for the input images. It returns a numpy array containing the predicted probabilities for each class. Since it is a binary classification model, the numpy array contains 0 or 1. 
+	f. The if and else if statements prediction that if classes.round == 1 then it returns dog, otherwise it returns cat for 0.
+13. The last line of code displays the results of every entry within a list known as result.
+	a. result is initalized to be a list.  
+	b.  For every image file within the combined_test_dir directory, a variable pathexample = the directory path within combined_test_dir + the filename of the image.
+	c. pathexample is then put into the makeprediction() function. Afterwards the result is appended to the result array formatted in pathexample + ' - ' + result from makeprediction().
+	d. The function then goes through every entry within the result array, saying that if the prediction == 'dog', it displays the entry in the format pathexample + ' - ' + result from makeprediction() and a image of a dog from a directory. If the entry is cat, it does the same thing but for a cat. 
